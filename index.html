@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Performance Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .dashboard-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Main Container -->
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <!-- Login View -->
+        <div id="loginView" class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl mt-10 p-8">
+            <h1 class="text-2xl font-bold text-center text-gray-700 mb-6">Staff Performance Tracker</h1>
+            <div class="space-y-4">
+                <div>
+                    <label for="userSelect" class="block text-sm font-medium text-gray-700">Select Your Name</label>
+                    <select id="userSelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="">-- Please select --</option>
+                        <!-- Staff names will be populated here -->
+                    </select>
+                </div>
+                <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">Login</button>
+            </div>
+             <div class="mt-4 text-center">
+                <a href="#" onclick="showAdminLogin()" class="text-sm text-indigo-600 hover:text-indigo-800">Login as Admin</a>
+            </div>
+        </div>
+        
+        <!-- Admin Password Modal -->
+        <div id="adminPasswordModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Admin Login</h3>
+                <input type="password" id="adminPassword" placeholder="Enter Admin Password" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                <div class="items-center px-4 py-3 mt-4">
+                    <button onclick="loginAdmin()" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Login
+                    </button>
+                     <button onclick="hideAdminLogin()" class="mt-2 px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff Dashboard View -->
+        <div id="staffView" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">Welcome, <span id="staffName"></span>!</h1>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition duration-300">Logout</button>
+            </div>
+
+            <!-- Clock-in and Log Work Section -->
+            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                <h2 class="text-xl font-semibold mb-4">Daily Log</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Clock In/Out -->
+                    <div class="space-y-4">
+                         <div class="flex items-center space-x-4">
+                            <button id="clockInBtn" onclick="clockIn()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-md">Clock In</button>
+                            <button id="clockOutBtn" onclick="clockOut()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-md" disabled>Clock Out</button>
+                        </div>
+                        <div class="text-center bg-gray-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">Start Time: <span id="startTime" class="font-semibold">--:--</span></p>
+                            <p class="text-sm text-gray-600">End Time: <span id="endTime" class="font-semibold">--:--</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Log Work Form -->
+                    <div class="space-y-3">
+                        <input type="number" id="calls" placeholder="Number of Calls" class="w-full p-2 border border-gray-300 rounded-md">
+                        <input type="number" id="presentations" placeholder="Number of Presentations" class="w-full p-2 border border-gray-300 rounded-md">
+                        <input type="number" id="sales" placeholder="Number of Sales" class="w-full p-2 border border-gray-300 rounded-md">
+                        <button id="logWorkBtn" onclick="logWork()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md" disabled>Log Today's Work</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance History Section -->
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                     <h2 class="text-xl font-semibold">Performance History</h2>
+                     <div class="flex space-x-2">
+                         <button onclick="filterData(7)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm">7 Days</button>
+                         <button onclick="filterData(30)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm">1 Month</button>
+                         <button onclick="filterData(90)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm">3 Months</button>
+                     </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calls</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Presentations</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffLogTable" class="bg-white divide-y divide-gray-200">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard View -->
+        <div id="adminView" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition duration-300">Logout</button>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                <label for="adminStaffSelect" class="block text-sm font-medium text-gray-700">Select Staff to View</label>
+                <select id="adminStaffSelect" onchange="loadAdminStaffData()" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <!-- Staff names for admin -->
+                </select>
+            </div>
+
+            <!-- Chart and Data Section -->
+            <div id="adminDataView" class="hidden">
+                <h2 class="text-2xl font-semibold mb-4">Performance for <span id="adminStaffName"></span></h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <div class="dashboard-card bg-white p-6 rounded-xl shadow-md text-center">
+                        <h3 class="text-lg font-medium text-gray-500">Total Calls</h3>
+                        <p id="totalCalls" class="text-4xl font-bold text-indigo-600">0</p>
+                    </div>
+                    <div class="dashboard-card bg-white p-6 rounded-xl shadow-md text-center">
+                        <h3 class="text-lg font-medium text-gray-500">Total Presentations</h3>
+                        <p id="totalPresentations" class="text-4xl font-bold text-indigo-600">0</p>
+                    </div>
+                    <div class="dashboard-card bg-white p-6 rounded-xl shadow-md text-center">
+                        <h3 class="text-lg font-medium text-gray-500">Total Sales</h3>
+                        <p id="totalSales" class="text-4xl font-bold text-indigo-600">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Performance Chart (Last 30 Days)</h3>
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============== CONFIGURATION ==============
+        // IMPORTANT: Replace this URL with your own Google Apps Script Web App URL
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHuz8jYoRjmg9ZYHp64gkojuk7ldHYgOZFSAuy5DyvyFUXylm_YAKBpdCbaAbu5gFBlw/exec';
+        const ADMIN_PASSWORD = 'admin'; // Change this password
+        const STAFF_LIST = ["Alice", "Bob", "Charlie", "David"]; // Add your staff names here
+        // =========================================
+
+        let currentUser = null;
+        let clockInTime = null;
+        let clockOutTime = null;
+        let staffData = [];
+        let performanceChart = null;
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!SCRIPT_URL) {
+                console.warn('CONFIGURATION WARNING: Please set your SCRIPT_URL in the HTML file for the application to function correctly.');
+            }
+            populateUserSelects();
+        });
+        
+        function populateUserSelects() {
+            const userSelect = document.getElementById('userSelect');
+            const adminStaffSelect = document.getElementById('adminStaffSelect');
+            STAFF_LIST.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                userSelect.appendChild(option.cloneNode(true));
+                adminStaffSelect.appendChild(option);
+            });
+        }
+        
+        // --- View Management ---
+        function showView(viewId) {
+            document.getElementById('loginView').classList.add('hidden');
+            document.getElementById('staffView').classList.add('hidden');
+            document.getElementById('adminView').classList.add('hidden');
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        function showAdminLogin() {
+            document.getElementById('adminPasswordModal').classList.remove('hidden');
+        }
+
+        function hideAdminLogin() {
+            document.getElementById('adminPasswordModal').classList.add('hidden');
+            document.getElementById('adminPassword').value = '';
+        }
+
+        // --- Authentication ---
+        function login() {
+            const selectedUser = document.getElementById('userSelect').value;
+            if (selectedUser) {
+                currentUser = selectedUser;
+                document.getElementById('staffName').textContent = currentUser;
+                showView('staffView');
+                loadStaffData();
+            } else {
+                alert('Please select your name.');
+            }
+        }
+        
+        function loginAdmin() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                currentUser = 'Admin';
+                hideAdminLogin();
+                showView('adminView');
+            } else {
+                alert('Incorrect password.');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            clockInTime = null;
+            clockOutTime = null;
+            staffData = [];
+            resetStaffForm();
+            document.getElementById('userSelect').value = '';
+            document.getElementById('adminStaffSelect').value = '';
+            document.getElementById('adminDataView').classList.add('hidden');
+            showView('loginView');
+        }
+
+        // --- Staff Dashboard Logic ---
+        function clockIn() {
+            clockInTime = new Date();
+            document.getElementById('startTime').textContent = clockInTime.toLocaleTimeString();
+            document.getElementById('clockInBtn').disabled = true;
+            document.getElementById('clockOutBtn').disabled = false;
+            document.getElementById('logWorkBtn').disabled = false;
+        }
+
+        function clockOut() {
+            clockOutTime = new Date();
+            document.getElementById('endTime').textContent = clockOutTime.toLocaleTimeString();
+            document.getElementById('clockOutBtn').disabled = true;
+        }
+
+        async function logWork() {
+            const calls = document.getElementById('calls').value;
+            const presentations = document.getElementById('presentations').value;
+            const sales = document.getElementById('sales').value;
+            
+            if (!clockInTime) {
+                alert('Please clock in first.');
+                return;
+            }
+            if (!calls || !presentations || !sales) {
+                alert('Please fill in all work fields.');
+                return;
+            }
+
+            if (!SCRIPT_URL) {
+                alert('CONFIGURATION ERROR: The Google Apps Script URL is not set. Please follow the setup instructions.');
+                return;
+            }
+
+            const logData = {
+                staffName: currentUser,
+                date: new Date().toLocaleDateString(),
+                startTime: clockInTime.toLocaleTimeString(),
+                endTime: clockOutTime ? clockOutTime.toLocaleTimeString() : 'N/A',
+                calls: calls,
+                presentations: presentations,
+                sales: sales
+            };
+
+            document.getElementById('logWorkBtn').textContent = 'Logging...';
+            document.getElementById('logWorkBtn').disabled = true;
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Important for Google Scripts
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'logWork', data: logData })
+                });
+                alert('Work logged successfully!');
+                resetStaffForm();
+                loadStaffData(); // Refresh data
+            } catch (error) {
+                console.error('Error logging work:', error);
+                alert('An error occurred. Please try again.');
+            } finally {
+                 document.getElementById('logWorkBtn').textContent = "Log Today's Work";
+            }
+        }
+
+        function resetStaffForm() {
+            document.getElementById('calls').value = '';
+            document.getElementById('presentations').value = '';
+            document.getElementById('sales').value = '';
+            document.getElementById('startTime').textContent = '--:--';
+            document.getElementById('endTime').textContent = '--:--';
+            document.getElementById('clockInBtn').disabled = false;
+            document.getElementById('clockOutBtn').disabled = true;
+            document.getElementById('logWorkBtn').disabled = true;
+            clockInTime = null;
+            clockOutTime = null;
+        }
+
+        async function loadStaffData() {
+            if (!SCRIPT_URL) {
+                alert('CONFIGURATION ERROR: The Google Apps Script URL is not set. Please follow the setup instructions.');
+                return;
+            }
+            try {
+                const response = await fetch(`${SCRIPT_URL}?staffName=${encodeURIComponent(currentUser)}`);
+                const data = await response.json();
+                staffData = data.data;
+                filterData(7); // Default to 7 days view
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('Could not load your performance data.');
+            }
+        }
+        
+        function filterData(days) {
+            const filteredData = staffData.filter(row => {
+                const logDate = new Date(row.Date);
+                const diffTime = Math.abs(new Date() - logDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= days;
+            });
+            renderStaffTable(filteredData);
+        }
+
+        function renderStaffTable(data) {
+            const tableBody = document.getElementById('staffLogTable');
+            tableBody.innerHTML = '';
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No data available.</td></tr>';
+                return;
+            }
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${row.Date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${row.StartTime}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${row.EndTime}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${row.Calls}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${row.Presentations}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${row.Sales}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // --- Admin Dashboard Logic ---
+        async function loadAdminStaffData() {
+            const staffName = document.getElementById('adminStaffSelect').value;
+            if (!staffName) {
+                 document.getElementById('adminDataView').classList.add('hidden');
+                return;
+            }
+            document.getElementById('adminDataView').classList.remove('hidden');
+            document.getElementById('adminStaffName').textContent = staffName;
+
+            if (!SCRIPT_URL) {
+                alert('CONFIGURATION ERROR: The Google Apps Script URL is not set. Please follow the setup instructions.');
+                return;
+            }
+
+             try {
+                const response = await fetch(`${SCRIPT_URL}?staffName=${encodeURIComponent(staffName)}`);
+                const data = await response.json();
+                renderAdminDashboard(data.data);
+            } catch (error) {
+                console.error('Error loading admin data:', error);
+                alert('Could not load staff performance data.');
+            }
+        }
+
+        function renderAdminDashboard(data) {
+            // Calculate totals
+            const totals = data.reduce((acc, row) => {
+                acc.calls += Number(row.Calls) || 0;
+                acc.presentations += Number(row.Presentations) || 0;
+                acc.sales += Number(row.Sales) || 0;
+                return acc;
+            }, { calls: 0, presentations: 0, sales: 0 });
+
+            document.getElementById('totalCalls').textContent = totals.calls;
+            document.getElementById('totalPresentations').textContent = totals.presentations;
+            document.getElementById('totalSales').textContent = totals.sales;
+
+            // Prepare chart data
+            const last30DaysData = data.filter(row => {
+                const logDate = new Date(row.Date);
+                const diffTime = Math.abs(new Date() - logDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 30;
+            }).reverse(); // To show chronologically
+
+            const labels = last30DaysData.map(d => new Date(d.Date).toLocaleDateString());
+            const callsData = last30DaysData.map(d => d.Calls);
+            const presentationsData = last30DaysData.map(d => d.Presentations);
+            const salesData = last30DaysData.map(d => d.Sales);
+
+            renderChart(labels, callsData, presentationsData, salesData);
+        }
+
+        function renderChart(labels, callsData, presentationsData, salesData) {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Calls',
+                            data: callsData,
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Presentations',
+                            data: presentationsData,
+                            borderColor: 'rgb(234, 179, 8)',
+                            backgroundColor: 'rgba(234, 179, 8, 0.5)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Sales',
+                            data: salesData,
+                            borderColor: 'rgb(34, 197, 94)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.5)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'Daily Performance Metrics' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
