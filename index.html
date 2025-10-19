@@ -3,480 +3,295 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Performance Tracker</title>
+    <title>Growth Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .dashboard-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
+        .modal { transition: opacity 0.25s ease; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        .calendar-day { border: 1px solid #e5e7eb; min-height: 120px; }
+        .day-header { background-color: #f9fafb; }
+        .metric-label { font-size: 0.7rem; color: #6b7280; }
+        .metric-value { font-weight: 600; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- Main Container -->
-    <div id="app" class="container mx-auto p-4 md:p-8 max-w-7xl">
-
+    <div id="app" class="container mx-auto p-4 md:p-8">
         <!-- Login View -->
-        <div id="loginView" class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl mt-10 p-8">
-            <h1 class="text-2xl font-bold text-center text-gray-700 mb-6">Staff Performance Tracker</h1>
+        <div id="loginView" class="max-w-md mx-auto bg-white rounded-xl shadow-md mt-10 p-8">
+            <h1 class="text-2xl font-bold text-center text-gray-700 mb-6">Growth Tracker Login</h1>
             <div class="space-y-4">
-                <div>
-                    <label for="userSelect" class="block text-sm font-medium text-gray-700">Select Your Name</label>
-                    <select id="userSelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                        <option value="">-- Please select --</option>
-                        <!-- Staff names will be populated here -->
-                    </select>
-                </div>
+                <select id="userSelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"></select>
                 <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">Login</button>
             </div>
-             <div class="mt-4 text-center">
-                <a href="#" onclick="showAdminLogin()" class="text-sm text-indigo-600 hover:text-indigo-800">Login as Admin</a>
-            </div>
-        </div>
-        
-        <!-- Admin Password Modal -->
-        <div id="adminPasswordModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Admin Login</h3>
-                <input type="password" id="adminPassword" placeholder="Enter Admin Password" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                <div class="items-center px-4 py-3 mt-4">
-                    <button onclick="loginAdmin()" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        Login
-                    </button>
-                     <button onclick="hideAdminLogin()" class="mt-2 px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
-                        Cancel
-                    </button>
-                </div>
-            </div>
         </div>
 
-        <!-- Staff Dashboard View -->
-        <div id="staffView" class="hidden">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-gray-800">Welcome, <span id="staffName"></span>!</h1>
-                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition duration-300">Logout</button>
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="hidden">
+            <header class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Welcome, <span id="staffName"></span></h1>
+                    <p class="text-gray-500">Your daily performance dashboard.</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                     <button onclick="openModal('clockInModal')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md">Clock In</button>
+                     <button onclick="openModal('clockOutModal')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md">Clock Out</button>
+                     <button onclick="openModal('logActivityModal')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">Log Activity</button>
+                     <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md">Logout</button>
+                </div>
+            </header>
+
+            <!-- Calendar Controls -->
+            <div class="flex justify-between items-center bg-white p-4 rounded-t-lg shadow">
+                <button onclick="changeMonth(-1)" class="px-3 py-1 bg-gray-200 rounded-md">&lt; Prev</button>
+                <h2 id="monthYearHeader" class="text-xl font-bold"></h2>
+                <button onclick="changeMonth(1)" class="px-3 py-1 bg-gray-200 rounded-md">Next &gt;</button>
             </div>
 
-            <!-- Clock-in and Log Work Section -->
-            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <h2 class="text-xl font-semibold mb-4">Daily Log</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Clock In/Out -->
-                    <div class="space-y-4">
-                         <div class="flex items-center space-x-4">
-                            <button id="clockInBtn" onclick="clockIn()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-md">Clock In</button>
-                            <button id="clockOutBtn" onclick="clockOut()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-md" disabled>Clock Out</button>
-                        </div>
-                        <div class="text-center bg-gray-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-600">Start Time: <span id="startTime" class="font-semibold">--:--</span></p>
-                            <p class="text-sm text-gray-600">End Time: <span id="endTime" class="font-semibold">--:--</span></p>
-                        </div>
-                    </div>
-
-                    <!-- Log Work Form -->
-                    <div class="space-y-3">
-                        <input type="number" id="calls" placeholder="Number of Calls" class="w-full p-2 border border-gray-300 rounded-md">
-                        <input type="number" id="presentations" placeholder="Number of Presentations" class="w-full p-2 border border-gray-300 rounded-md">
-                        <input type="number" id="sales" placeholder="Number of Sales" class="w-full p-2 border border-gray-300 rounded-md">
-                        <button id="logWorkBtn" onclick="logWork()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md" disabled>Log Today's Work</button>
-                    </div>
+            <!-- Calendar -->
+            <div id="calendarContainer" class="bg-white rounded-b-lg shadow overflow-hidden">
+                <!-- Headers -->
+                <div class="calendar-grid day-header font-bold text-center text-sm text-gray-600">
+                    <div>Sunday</div> <div>Monday</div> <div>Tuesday</div> <div>Wednesday</div> <div>Thursday</div> <div>Friday</div> <div>Saturday</div>
                 </div>
-            </div>
-
-            <!-- Performance History Section -->
-            <div>
-                <div class="flex justify-between items-center mb-4">
-                     <h2 class="text-xl font-semibold">Performance History</h2>
-                     <div class="flex space-x-2">
-                         <button onclick="filterData(7)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm">7 Days</button>
-                         <button onclick="filterData(30)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm">1 Month</button>
-                         <button onclick="filterData(90)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm">3 Months</button>
-                     </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-md">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calls</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Presentations</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales</th>
-                                </tr>
-                            </thead>
-                            <tbody id="staffLogTable" class="bg-white divide-y divide-gray-200">
-                                <!-- Data will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <!-- Days -->
+                <div id="calendarGrid" class="calendar-grid"></div>
             </div>
         </div>
+    </div>
+    
+    <!-- Modals -->
+    <div id="modalBackdrop" class="fixed inset-0 bg-gray-800 bg-opacity-50 hidden"></div>
 
-        <!-- Admin Dashboard View -->
-        <div id="adminView" class="hidden">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition duration-300">Logout</button>
+    <!-- Clock In Modal -->
+    <div id="clockInModal" class="fixed inset-0 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md">
+            <h3 class="text-xl font-semibold mb-4">Clock In: <span id="yesterdayDate"></span></h3>
+            <p class="text-sm text-gray-500 mb-4">Enter your metric totals for the previous workday.</p>
+            <div class="space-y-3">
+                <input type="number" id="yesterdayDials" placeholder="Total Dials Yesterday" class="w-full p-2 border rounded-md">
+                <input type="number" id="yesterdayPresentations" placeholder="Total Presentations Yesterday" class="w-full p-2 border rounded-md">
+                <input type="number" id="yesterdayBinds" placeholder="Total Binds Yesterday" class="w-full p-2 border rounded-md">
+                <input type="number" id="yesterdayAlp" placeholder="Total ALP Yesterday" class="w-full p-2 border rounded-md">
             </div>
-            
-            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <label for="adminStaffSelect" class="block text-sm font-medium text-gray-700">Select Staff to View</label>
-                <select id="adminStaffSelect" onchange="loadAdminStaffData()" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                    <!-- Staff names for admin -->
-                </select>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button onclick="closeModal('clockInModal')" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
+                <button onclick="submitClockIn()" class="px-4 py-2 bg-green-500 text-white rounded-md">Submit</button>
             </div>
+        </div>
+    </div>
 
-            <!-- Chart and Data Section -->
-            <div id="adminDataView" class="hidden">
-                <h2 class="text-2xl font-semibold mb-4">Performance for <span id="adminStaffName"></span></h2>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    <div class="dashboard-card bg-white p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-lg font-medium text-gray-500">Total Calls</h3>
-                        <p id="totalCalls" class="text-4xl font-bold text-indigo-600">0</p>
-                    </div>
-                    <div class="dashboard-card bg-white p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-lg font-medium text-gray-500">Total Presentations</h3>
-                        <p id="totalPresentations" class="text-4xl font-bold text-indigo-600">0</p>
-                    </div>
-                    <div class="dashboard-card bg-white p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-lg font-medium text-gray-500">Total Sales</h3>
-                        <p id="totalSales" class="text-4xl font-bold text-indigo-600">0</p>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-xl font-semibold mb-4">Performance Chart (Last 30 Days)</h3>
-                    <canvas id="performanceChart"></canvas>
-                </div>
+    <!-- Clock Out Modal -->
+     <div id="clockOutModal" class="fixed inset-0 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md">
+            <h3 class="text-xl font-semibold mb-4">Clock Out: <span id="todayDate"></span></h3>
+             <p class="text-sm text-gray-500 mb-4">Enter your metric totals for today.</p>
+            <div class="space-y-3">
+                <input type="number" id="todayDials" placeholder="Total Dials Today" class="w-full p-2 border rounded-md">
+                <input type="number" id="todayPresentations" placeholder="Total Presentations Today" class="w-full p-2 border rounded-md">
+                <input type="number" id="todayBinds" placeholder="Total Binds Today" class="w-full p-2 border rounded-md">
+                <input type="number" id="todayAlp" placeholder="Total ALP Today" class="w-full p-2 border rounded-md">
+            </div>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button onclick="closeModal('clockOutModal')" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
+                <button onclick="submitClockOut()" class="px-4 py-2 bg-yellow-500 text-white rounded-md">Submit</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Log Activity Modal -->
+     <div id="logActivityModal" class="fixed inset-0 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-lg">
+            <h3 class="text-xl font-semibold mb-4">Log an Activity</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <select id="activityType" class="w-full p-2 border rounded-md"><option>Presentation</option><option>Call</option><option>Sales</option></select>
+                <select id="activityOutcome" class="w-full p-2 border rounded-md"><option>Policy Issued</option><option>Pending</option><option>No-Sale</option><option>Follow-up</option></select>
+                <input type="text" id="activityCustomer" placeholder="Customer Name/Info" class="w-full p-2 border rounded-md md:col-span-2">
+                <input type="number" id="activityAlp" placeholder="ALP (if applicable)" class="w-full p-2 border rounded-md">
+                <textarea id="activityNotes" placeholder="Notes..." class="w-full p-2 border rounded-md md:col-span-2" rows="3"></textarea>
+            </div>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button onclick="closeModal('logActivityModal')" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
+                <button onclick="submitActivity()" class="px-4 py-2 bg-blue-500 text-white rounded-md">Log Activity</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ============== CONFIGURATION ==============
-        // IMPORTANT: Replace this URL with your own Google Apps Script Web App URL
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHuz8jYoRjmg9ZYHp64gkojuk7ldHYgOZFSAuy5DyvyFUXylm_YAKBpdCbaAbu5gFBlw/exec';
-        const ADMIN_PASSWORD = 'admin'; // Change this password
-        const STAFF_LIST = ["Alice", "Bob", "Charlie", "David"]; // Add your staff names here
-        // =========================================
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7Kly9ZheBMhFc_h2A3k7tgbO__lNmvB9bI0PuTDtCZHzmugMZ51-EfchmF67YeVxgew/exec'; // IMPORTANT: Paste your Google Apps Script URL here
+        const STAFF_LIST = ["Alice", "Bob", "Charlie", "David"];
 
         let currentUser = null;
-        let clockInTime = null;
-        let clockOutTime = null;
-        let staffData = [];
-        let performanceChart = null;
+        let currentDate = new Date();
 
-        // --- Initialization ---
+        // --- Init ---
         document.addEventListener('DOMContentLoaded', () => {
-            if (!SCRIPT_URL) {
-                console.warn('CONFIGURATION WARNING: Please set your SCRIPT_URL in the HTML file for the application to function correctly.');
-            }
-            populateUserSelects();
-        });
-        
-        function populateUserSelects() {
+            if (!SCRIPT_URL) console.warn('SCRIPT_URL is not set.');
             const userSelect = document.getElementById('userSelect');
-            const adminStaffSelect = document.getElementById('adminStaffSelect');
-            STAFF_LIST.forEach(name => {
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                userSelect.appendChild(option.cloneNode(true));
-                adminStaffSelect.appendChild(option);
-            });
-        }
-        
-        // --- View Management ---
-        function showView(viewId) {
-            document.getElementById('loginView').classList.add('hidden');
-            document.getElementById('staffView').classList.add('hidden');
-            document.getElementById('adminView').classList.add('hidden');
-            document.getElementById(viewId).classList.remove('hidden');
-        }
+            STAFF_LIST.forEach(name => userSelect.innerHTML += `<option value="${name}">${name}</option>`);
+        });
 
-        function showAdminLogin() {
-            document.getElementById('adminPasswordModal').classList.remove('hidden');
-        }
-
-        function hideAdminLogin() {
-            document.getElementById('adminPasswordModal').classList.add('hidden');
-            document.getElementById('adminPassword').value = '';
-        }
-
-        // --- Authentication ---
+        // --- Auth & View Management ---
         function login() {
-            const selectedUser = document.getElementById('userSelect').value;
-            if (selectedUser) {
-                currentUser = selectedUser;
-                document.getElementById('staffName').textContent = currentUser;
-                showView('staffView');
-                loadStaffData();
-            } else {
-                alert('Please select your name.');
-            }
-        }
-        
-        function loginAdmin() {
-            const password = document.getElementById('adminPassword').value;
-            if (password === ADMIN_PASSWORD) {
-                currentUser = 'Admin';
-                hideAdminLogin();
-                showView('adminView');
-            } else {
-                alert('Incorrect password.');
-            }
+            const user = document.getElementById('userSelect').value;
+            if (!user) return alert('Please select a name.');
+            currentUser = user;
+            document.getElementById('staffName').textContent = currentUser;
+            document.getElementById('loginView').classList.add('hidden');
+            document.getElementById('dashboardView').classList.remove('hidden');
+            renderDashboard();
         }
 
         function logout() {
             currentUser = null;
-            clockInTime = null;
-            clockOutTime = null;
-            staffData = [];
-            resetStaffForm();
-            document.getElementById('userSelect').value = '';
-            document.getElementById('adminStaffSelect').value = '';
-            document.getElementById('adminDataView').classList.add('hidden');
-            showView('loginView');
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('loginView').classList.remove('hidden');
         }
 
-        // --- Staff Dashboard Logic ---
-        function clockIn() {
-            clockInTime = new Date();
-            document.getElementById('startTime').textContent = clockInTime.toLocaleTimeString();
-            document.getElementById('clockInBtn').disabled = true;
-            document.getElementById('clockOutBtn').disabled = false;
-            document.getElementById('logWorkBtn').disabled = false;
+        function openModal(modalId) {
+            document.getElementById('modalBackdrop').classList.remove('hidden');
+            document.getElementById(modalId).classList.remove('hidden');
+            if (modalId === 'clockInModal') {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                document.getElementById('yesterdayDate').textContent = yesterday.toLocaleDateString();
+            } else if (modalId === 'clockOutModal') {
+                document.getElementById('todayDate').textContent = new Date().toLocaleDateString();
+            }
         }
 
-        function clockOut() {
-            clockOutTime = new Date();
-            document.getElementById('endTime').textContent = clockOutTime.toLocaleTimeString();
-            document.getElementById('clockOutBtn').disabled = true;
+        function closeModal(modalId) {
+            document.getElementById('modalBackdrop').classList.add('hidden');
+            document.getElementById(modalId).classList.add('hidden');
         }
-
-        async function logWork() {
-            const calls = document.getElementById('calls').value;
-            const presentations = document.getElementById('presentations').value;
-            const sales = document.getElementById('sales').value;
+        
+        // --- Dashboard & Calendar ---
+        async function renderDashboard() {
+            if (!SCRIPT_URL) {
+                return alert("SCRIPT_URL is not configured. Please paste your Google Apps Script URL into the SCRIPT_URL constant in the HTML file.");
+            }
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
             
-            if (!clockInTime) {
-                alert('Please clock in first.');
-                return;
-            }
-            if (!calls || !presentations || !sales) {
-                alert('Please fill in all work fields.');
-                return;
-            }
-
-            if (!SCRIPT_URL) {
-                alert('CONFIGURATION ERROR: The Google Apps Script URL is not set. Please follow the setup instructions.');
-                return;
-            }
-
-            const logData = {
-                staffName: currentUser,
-                date: new Date().toLocaleDateString(),
-                startTime: clockInTime.toLocaleTimeString(),
-                endTime: clockOutTime ? clockOutTime.toLocaleTimeString() : 'N/A',
-                calls: calls,
-                presentations: presentations,
-                sales: sales
-            };
-
-            document.getElementById('logWorkBtn').textContent = 'Logging...';
-            document.getElementById('logWorkBtn').disabled = true;
-
+            document.getElementById('monthYearHeader').textContent = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+            
             try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // Important for Google Scripts
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'logWork', data: logData })
-                });
-                alert('Work logged successfully!');
-                resetStaffForm();
-                loadStaffData(); // Refresh data
-            } catch (error) {
-                console.error('Error logging work:', error);
-                alert('An error occurred. Please try again.');
-            } finally {
-                 document.getElementById('logWorkBtn').textContent = "Log Today's Work";
-            }
-        }
-
-        function resetStaffForm() {
-            document.getElementById('calls').value = '';
-            document.getElementById('presentations').value = '';
-            document.getElementById('sales').value = '';
-            document.getElementById('startTime').textContent = '--:--';
-            document.getElementById('endTime').textContent = '--:--';
-            document.getElementById('clockInBtn').disabled = false;
-            document.getElementById('clockOutBtn').disabled = true;
-            document.getElementById('logWorkBtn').disabled = true;
-            clockInTime = null;
-            clockOutTime = null;
-        }
-
-        async function loadStaffData() {
-            if (!SCRIPT_URL) {
-                alert('CONFIGURATION ERROR: The Google Apps Script URL is not set. Please follow the setup instructions.');
-                return;
-            }
-            try {
-                const response = await fetch(`${SCRIPT_URL}?staffName=${encodeURIComponent(currentUser)}`);
-                const data = await response.json();
-                staffData = data.data;
-                filterData(7); // Default to 7 days view
-            } catch (error) {
-                console.error('Error loading data:', error);
-                alert('Could not load your performance data.');
+                const res = await fetch(`${SCRIPT_URL}?action=getDashboardData&staffName=${currentUser}&month=${month}&year=${year}`);
+                const result = await res.json();
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                renderCalendar(month, year, result.data || []);
+            } catch (err) {
+                console.error("Failed to fetch dashboard data:", err);
+                alert(`Could not load dashboard data: ${err.message}`);
+                renderCalendar(month, year, []); // Render empty on error
             }
         }
         
-        function filterData(days) {
-            const filteredData = staffData.filter(row => {
-                const logDate = new Date(row.Date);
-                const diffTime = Math.abs(new Date() - logDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= days;
-            });
-            renderStaffTable(filteredData);
-        }
-
-        function renderStaffTable(data) {
-            const tableBody = document.getElementById('staffLogTable');
-            tableBody.innerHTML = '';
-            if (data.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No data available.</td></tr>';
-                return;
-            }
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">${row.Date}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${row.StartTime}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${row.EndTime}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${row.Calls}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${row.Presentations}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${row.Sales}</td>
-                `;
-                tableBody.appendChild(tr);
-            });
-        }
-
-        // --- Admin Dashboard Logic ---
-        async function loadAdminStaffData() {
-            const staffName = document.getElementById('adminStaffSelect').value;
-            if (!staffName) {
-                 document.getElementById('adminDataView').classList.add('hidden');
-                return;
-            }
-            document.getElementById('adminDataView').classList.remove('hidden');
-            document.getElementById('adminStaffName').textContent = staffName;
-
-            if (!SCRIPT_URL) {
-                alert('CONFIGURATION ERROR: The Google Apps Script URL is not set. Please follow the setup instructions.');
-                return;
-            }
-
-             try {
-                const response = await fetch(`${SCRIPT_URL}?staffName=${encodeURIComponent(staffName)}`);
-                const data = await response.json();
-                renderAdminDashboard(data.data);
-            } catch (error) {
-                console.error('Error loading admin data:', error);
-                alert('Could not load staff performance data.');
-            }
-        }
-
-        function renderAdminDashboard(data) {
-            // Calculate totals
-            const totals = data.reduce((acc, row) => {
-                acc.calls += Number(row.Calls) || 0;
-                acc.presentations += Number(row.Presentations) || 0;
-                acc.sales += Number(row.Sales) || 0;
-                return acc;
-            }, { calls: 0, presentations: 0, sales: 0 });
-
-            document.getElementById('totalCalls').textContent = totals.calls;
-            document.getElementById('totalPresentations').textContent = totals.presentations;
-            document.getElementById('totalSales').textContent = totals.sales;
-
-            // Prepare chart data
-            const last30DaysData = data.filter(row => {
-                const logDate = new Date(row.Date);
-                const diffTime = Math.abs(new Date() - logDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 30;
-            }).reverse(); // To show chronologically
-
-            const labels = last30DaysData.map(d => new Date(d.Date).toLocaleDateString());
-            const callsData = last30DaysData.map(d => d.Calls);
-            const presentationsData = last30DaysData.map(d => d.Presentations);
-            const salesData = last30DaysData.map(d => d.Sales);
-
-            renderChart(labels, callsData, presentationsData, salesData);
-        }
-
-        function renderChart(labels, callsData, presentationsData, salesData) {
-            const ctx = document.getElementById('performanceChart').getContext('2d');
+        function renderCalendar(month, year, data) {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
             
-            if (performanceChart) {
-                performanceChart.destroy();
-            }
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            performanceChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Calls',
-                            data: callsData,
-                            borderColor: 'rgb(59, 130, 246)',
-                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                            tension: 0.1
-                        },
-                        {
-                            label: 'Presentations',
-                            data: presentationsData,
-                            borderColor: 'rgb(234, 179, 8)',
-                            backgroundColor: 'rgba(234, 179, 8, 0.5)',
-                            tension: 0.1
-                        },
-                        {
-                            label: 'Sales',
-                            data: salesData,
-                            borderColor: 'rgb(34, 197, 94)',
-                            backgroundColor: 'rgba(34, 197, 94, 0.5)',
-                            tension: 0.1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'top' },
-                        title: { display: true, text: 'Daily Performance Metrics' }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
+            // Add blank days for start of month
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += `<div class="calendar-day bg-gray-50"></div>`;
+            }
+            
+            // Add days of month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayData = data.find(d => {
+                    const dataDate = new Date(d.Date);
+                    return dataDate.getFullYear() === year && dataDate.getMonth() === month && dataDate.getDate() === day;
+                });
+                grid.innerHTML += `
+                    <div class="calendar-day p-2">
+                        <div class="font-bold text-sm">${day}</div>
+                        <div class="mt-1 space-y-1">
+                            <div><span class="metric-label">Dials:</span> <span class="metric-value">${dayData?.Dials || '-'}</span></div>
+                            <div><span class="metric-label">Pres:</span> <span class="metric-value">${dayData?.Presentations || '-'}</span></div>
+                            <div><span class="metric-label">Binds:</span> <span class="metric-value">${dayData?.Binds || '-'}</span></div>
+                            <div><span class="metric-label">ALP:</span> <span class="metric-value">${dayData?.ALP || '-'}</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        function changeMonth(offset) {
+            currentDate.setMonth(currentDate.getMonth() + offset);
+            renderDashboard();
+        }
+
+        // --- Data Submission ---
+        async function submitClockIn() {
+            const data = {
+                staffName: currentUser,
+                date: new Date().toISOString(),
+                time: new Date().toLocaleTimeString(),
+                type: 'ClockIn',
+                metrics: { // Clock-in submits YESTERDAY's metrics
+                    dials: document.getElementById('yesterdayDials').value,
+                    presentations: document.getElementById('yesterdayPresentations').value,
+                    binds: document.getElementById('yesterdayBinds').value,
+                    alp: document.getElementById('yesterdayAlp').value,
                 }
-            });
+            };
+            await submitData('logClockEvent', data, 'clockInModal');
+        }
+
+        async function submitClockOut() {
+            const data = {
+                staffName: currentUser,
+                date: new Date().toISOString(),
+                time: new Date().toLocaleTimeString(),
+                type: 'ClockOut',
+                metrics: { // Clock-out submits TODAY's metrics
+                    dials: document.getElementById('todayDials').value,
+                    presentations: document.getElementById('todayPresentations').value,
+                    binds: document.getElementById('todayBinds').value,
+                    alp: document.getElementById('todayAlp').value,
+                }
+            };
+            await submitData('logClockEvent', data, 'clockOutModal');
+        }
+        
+        async function submitActivity() {
+             const data = {
+                staffName: currentUser,
+                date: new Date().toLocaleDateString(),
+                activityType: document.getElementById('activityType').value,
+                outcome: document.getElementById('activityOutcome').value,
+                customerInfo: document.getElementById('activityCustomer').value,
+                alp: document.getElementById('activityAlp').value,
+                notes: document.getElementById('activityNotes').value,
+            };
+            await submitData('logActivity', data, 'logActivityModal');
+        }
+        
+        async function submitData(action, data, modalId) {
+             if (!SCRIPT_URL) return alert('SCRIPT_URL is not configured.');
+             try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    // mode: 'no-cors', // Removed to allow reading server response
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, data })
+                });
+                alert('Data submitted successfully!');
+                closeModal(modalId);
+                renderDashboard(); // Refresh dashboard to show new data
+             } catch (err) {
+                console.error(`Failed to submit ${action}:`, err);
+                alert(`Error submitting data. Please try again.`);
+             }
         }
     </script>
 </body>
 </html>
+
