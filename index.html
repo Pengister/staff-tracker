@@ -120,7 +120,7 @@
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTFnUsHxGA0RDznBr2T2AhfblaBZgJi2Cufw00b4R-7lTS4ld75eX9tqyVBXoM0z79Jw/exec'; // IMPORTANT: Paste your Google Apps Script URL here
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2giojWF7vLmR-6qWkKBc_lM0VJWQVj5IR9_q6hx1wVb6OHCvl9zxPICEzwFHww7_1fA/exec'; // IMPORTANT: Paste your Google Apps Script URL here
         const STAFF_LIST = ["Alice", "Bob", "Charlie", "David"];
 
         let currentUser = null;
@@ -179,10 +179,9 @@
             
             try {
                 const res = await fetch(`${SCRIPT_URL}?action=getDashboardData&staffName=${currentUser}&month=${month}&year=${year}`);
+                if (!res.ok) throw new Error(`Server responded with status: ${res.status}`);
                 const result = await res.json();
-                if (result.error) {
-                    throw new Error(result.error);
-                }
+                if (result.error) throw new Error(result.error);
                 renderCalendar(month, year, result.data || []);
             } catch (err) {
                 console.error("Failed to fetch dashboard data:", err);
@@ -198,16 +197,16 @@
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            // Add blank days for start of month
             for (let i = 0; i < firstDay; i++) {
                 grid.innerHTML += `<div class="calendar-day bg-gray-50"></div>`;
             }
             
-            // Add days of month
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayData = data.find(d => {
-                    const dataDate = new Date(d.Date);
-                    return dataDate.getFullYear() === year && dataDate.getMonth() === month && dataDate.getDate() === day;
+                    // **FIXED:** Parse date string as UTC to avoid timezone shifts.
+                    const dateParts = d.Date.split('-'); // e.g., "2025-10-20"
+                    const dataDate = new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2]));
+                    return dataDate.getUTCFullYear() === year && dataDate.getUTCMonth() === month && dataDate.getUTCDate() === day;
                 });
                 grid.innerHTML += `
                     <div class="calendar-day p-2">
@@ -235,7 +234,7 @@
                 date: new Date().toISOString(),
                 time: new Date().toLocaleTimeString(),
                 type: 'ClockIn',
-                metrics: { // Clock-in submits YESTERDAY's metrics
+                metrics: {
                     dials: document.getElementById('yesterdayDials').value,
                     presentations: document.getElementById('yesterdayPresentations').value,
                     binds: document.getElementById('yesterdayBinds').value,
@@ -251,7 +250,7 @@
                 date: new Date().toISOString(),
                 time: new Date().toLocaleTimeString(),
                 type: 'ClockOut',
-                metrics: { // Clock-out submits TODAY's metrics
+                metrics: {
                     dials: document.getElementById('todayDials').value,
                     presentations: document.getElementById('todayPresentations').value,
                     binds: document.getElementById('todayBinds').value,
@@ -277,23 +276,35 @@
         async function submitData(action, data, modalId) {
              if (!SCRIPT_URL) return alert('SCRIPT_URL is not configured.');
              try {
-                await fetch(SCRIPT_URL, {
+                const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    // mode: 'no-cors', // Removed to allow reading server response
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action, data })
                 });
+
+                // **FIXED:** Check if the server responded successfully.
+                if (!response.ok) {
+                    // Try to get a more specific error message from the backend.
+                    const errorText = await response.text();
+                    throw new Error(`Server error (${response.status}): ${errorText}`);
+                }
+
+                const result = await response.json();
+
+                // **FIXED:** Check for application-level errors returned by the script.
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
                 alert('Data submitted successfully!');
                 closeModal(modalId);
-                renderDashboard(); // Refresh dashboard to show new data
+                renderDashboard();
              } catch (err) {
                 console.error(`Failed to submit ${action}:`, err);
-                alert(`Error submitting data. Please try again.`);
+                alert(`Error submitting data: ${err.message}`);
              }
         }
     </script>
 </body>
 </html>
-
-
 
